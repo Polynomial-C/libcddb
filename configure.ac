@@ -29,25 +29,25 @@ AC_ARG_ENABLE([loglevel],
               AS_HELP_STRING([--enable-loglevel=LVL],[set default log level to one of debug, info, warn,
                              error, critical or none (default=warn)]),
               default_loglevel=$enableval, default_loglevel=$enableval)
-if test x$default_loglevel = xdebug; then
-    default_loglevel="CDDB_LOG_DEBUG"
-elif test x$default_loglevel = xinfo; then
-    default_loglevel="CDDB_LOG_INFO"
-elif test x$default_loglevel = xwarn -o x$default_loglevel = xyes; then
-    default_loglevel="CDDB_LOG_WARN"
-elif test x$default_loglevel = xerror; then
-    default_loglevel="CDDB_LOG_ERROR"
-elif test x$default_loglevel = xcritical; then
-    default_loglevel="CDDB_LOG_CRITICAL"
-elif test x$default_loglevel = xnone -o x$default_loglevel = xno; then
-    default_loglevel="CDDB_LOG_NONE"
-elif test x$default_loglevel != x; then
-    AC_MSG_WARN([invalid loglevel, using default])
-fi
+AS_IF([test x$default_loglevel = xdebug],
+	[default_loglevel="CDDB_LOG_DEBUG"],
+    [test x$default_loglevel = xinfo],
+	[default_loglevel="CDDB_LOG_INFO"],
+    [test x$default_loglevel = xwarn -o x$default_loglevel = xyes],
+	[default_loglevel="CDDB_LOG_WARN"],
+    [test x$default_loglevel = xerror],
+	[default_loglevel="CDDB_LOG_ERROR"],
+    [test x$default_loglevel = xcritical],
+	[default_loglevel="CDDB_LOG_CRITICAL"],
+    [test x$default_loglevel = xnone -o x$default_loglevel = xno],
+	[default_loglevel="CDDB_LOG_NONE"],
+    [test x$default_loglevel != x],
+	[AC_MSG_WARN([invalid loglevel, using default])]
+)
 
-if test x$default_loglevel != x; then
+AS_IF([test x$default_loglevel != x], [
     AC_DEFINE_UNQUOTED([LOGLEVEL],$default_loglevel,[Set to default log level])
-fi
+])
 
 AC_ARG_WITH([cdio],
             AS_HELP_STRING([--without-cdio],[do not use libcdio functionality when building the
@@ -58,11 +58,11 @@ AC_ARG_WITH([iconv],
 
 dnl Check for target
 AC_CANONICAL_HOST
-case $host in
-    *beos*)
+AS_CASE([$host],
+    [*beos*], [
         AC_DEFINE([BEOS],1,[Define if compiling on BeOS system.])
-        ;;
-    *darwin*)
+    ],
+    [*darwin*], [
         AC_DEFINE([CDDB_NEED_UNISTD_H],1,
         [Define if you have <unistd.h> and need it included.
          On MacOS, <regex.h> needs this but that header doesn't
@@ -71,15 +71,15 @@ case $host in
         [Define if you have <sys/socket.h> and need it included.
          On MacOS, <cddb_net.h> needs this but that header doesn't
          include it.])
-        ;;
-    *haiku*)
+    ],
+    [*haiku*], [
         AC_DEFINE([HAIKU],1,[Define if compiling on Haiku system.])
         AC_DEFINE([CDDB_NEED_UNISTD_H],1,
         [Define if you have <unistd.h> and need it included.])
         AC_DEFINE([CDDB_NEED_SYS_SOCKET_H],1,
         [Define if you have <sys/socket.h> and need it included.])
-        ;;
-esac
+    ]
+)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -113,7 +113,7 @@ AC_CHECK_FUNCS([mkdir regcomp socket strdup strtol strchr memset alarm select re
 AC_CHECK_FUNC([gethostbyname], , AC_CHECK_LIB([nsl], [gethostbyname]))
 
 dnl Check for libcdio
-if test x$with_cdio != xno; then
+AS_IF([test x$with_cdio != xno], [
     PKG_CHECK_MODULES(LIBCDIO, libcdio >= 0.76, [
         HAVE_LIBCDIO=yes
         AC_DEFINE(HAVE_LIBCDIO, [], [Define this if you have libcdio installed])
@@ -122,28 +122,27 @@ if test x$with_cdio != xno; then
         HAVE_LIBCDIO=no])
     AC_SUBST(LIBCDIO_LIBS)
     AC_SUBST(LIBCDIO_CFLAGS)
-else
+    ], [
     HAVE_LIBCDIO=no
-fi
+])
 
 dnl Check for iconv
-if test x$with_iconv != xno; then
+AS_IF([test x$with_iconv != xno], [
     AC_CHECK_HEADERS([iconv.h], [with_iconv=1], [with_iconv=0])
     AM_ICONV
-else
+    ], [
     with_iconv=0
-fi
+])
 AC_SUBST(with_iconv)
 
 dnl Check and add some GCC specific warning flags
 dnl - we do this as the last thing so that a possible -Werror flag
 dnl - does not cause a failure in one of the other tests above
-if test "x$GCC" != "xyes"
-then
+AS_IF([test "x$GCC" != "xyes"], [
     echo "*** non GNU CC compiler detected."
     echo "*** This package has not been tested very well with non GNU compilers"
     echo "*** you should try to use 'gcc' for compiling this package."
-else
+    ], [
     WARN_CFLAGS="-Wall -Wchar-subscripts -Wmissing-prototypes -Wmissing-declarations"
     WARN_CFLAGS="$WARN_CFLAGS -Wunused -Wpointer-arith -Wwrite-strings -Wnested-externs"
     WARN_CFLAGS="$WARN_CFLAGS -Wno-sign-compare"
@@ -151,7 +150,7 @@ dnl MAINTAINER_CFLAGS="-std=c99 -pedantic -Werror -O0"
 dnl MAINTAINER_CFLAGS="-Werror -O0"
     MAINTAINER_CFLAGS="-Werror"
 
-    if test "x$enable_maintainer_mode" = "xyes"; then
+    AS_IF([test "x$enable_maintainer_mode" = "xyes"], [
         maintainer_flags=""
         for MOPT in $MAINTAINER_CFLAGS; do
             SAVE_CFLAGS="$CFLAGS"
@@ -160,18 +159,18 @@ dnl MAINTAINER_CFLAGS="-Werror -O0"
             AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_option=yes],[has_option=no])
             CFLAGS="$SAVE_CFLAGS"
             AC_MSG_RESULT($has_option)
-            if test "x$has_option" = "xyes"; then
+            AS_IF([test "x$has_option" = "xyes"] ,[
                 maintainer_flags="$maintainer_flags $MOPT"
-            fi
+            ])
             unset has_option
             unset SAVE_CFLAGS
         done
         unset MOPT
         MAINTAINER_CFLAGS="$maintainer_flags"
         unset maintainer_flags
-    else
+	], [
         MAINTAINER_CFLAGS=""
-    fi
+    ])
 
     warning_flags=""
     for WOPT in $WARN_CFLAGS; do
@@ -181,26 +180,23 @@ dnl MAINTAINER_CFLAGS="-Werror -O0"
         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_option=yes],[has_option=no])
         CFLAGS="$SAVE_CFLAGS"
         AC_MSG_RESULT($has_option)
-        if test "x$has_option" = "xyes"; then
+        AS_IF([test "x$has_option" = "xyes"], [
             warning_flags="$warning_flags $WOPT"
-        fi
+        ])
         unset has_option
         unset SAVE_CFLAGS
     done
     unset WOPT
     WARN_CFLAGS="$warning_flags"
     unset warning_flags
-fi
+])
 CFLAGS="$CFLAGS $WARN_CFLAGS $MAINTAINER_CFLAGS"
 
 dnl Additional configuration (platform dependant)
-case $host in
-    *mingw*)
+AS_CASE([$host],
+    [*mingw*], [
         LIBS="$LIBS -lws2_32 -lregex"
-        ;;
-    *)
-        ;;
-esac
-
+    ]
+)
 dnl Create makefiles
 AC_OUTPUT
